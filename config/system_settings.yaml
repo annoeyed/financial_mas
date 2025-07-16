@@ -1,0 +1,6 @@
+logging:
+  level: INFO
+  format: "[%(asctime)s] %(name)s %(levelname)s: %(message)s"
+
+communication:
+  broker_url: "inproc://financial_mas"

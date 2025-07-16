@@ -1,0 +1,11 @@
+agents:
+  - name: MarketDataAgent
+    class: agents.market_data_agent.MarketDataAgent
+  - name: TechnicalAgent
+    class: agents.technical_agent.TechnicalAgent
+  - name: ScreeningAgent
+    class: agents.screening_agent.ScreeningAgent
+  - name: SignalAgent
+    class: agents.signal_agent.SignalAgent
+  - name: IntentAgent
+    class: agents.intent_agent.IntentAgent
