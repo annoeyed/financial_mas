@@ -6,6 +6,7 @@ Each agent is responsible for a distinct stage in the investment workflow — fr
 ---
 
 ## Architecture Overview
+```
 financial_mas/
 ├── agents/ # Individual agents (market data, technical, screening, etc.)
 │ ├── base_agent.py
@@ -36,7 +37,7 @@ financial_mas/
 │ ├── error_handler.py
 │ └── logger.py
 ├── main.py # System entry point
-
+```
 
 ---
 
