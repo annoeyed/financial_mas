@@ -1,12 +1,9 @@
-# core/memory_manager.py
-
 class MemoryManager:
-    """대화 세션 및 상태 관리"""
     def __init__(self):
-        self.sessions = {}
+        self.memory = []
 
-    def get(self, session_id: str) -> dict:
-        return self.sessions.get(session_id, {})
+    def add(self, query, result):
+        self.memory.append({'query': query, 'result': result})
 
-    def update(self, session_id: str, data: dict):
-        self.sessions[session_id] = {**self.sessions.get(session_id, {}), **data}
+    def get_all(self):
+        return self.memory
