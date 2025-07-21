@@ -1,10 +1,8 @@
 import logging
-from config.system_settings import load_yaml
 
-cfg = load_yaml("config/system_settings.yaml")
-
-loagging.basicConfig(
-    level=getattr(logging, cfg['log_level']),
-    format="%(asctime)s %(levelname)s [%(name)s] %(messaage)s"
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-logger = logging.getLogger(cfg['service_name'])
+
+logger = logging.getLogger("agent-system")
