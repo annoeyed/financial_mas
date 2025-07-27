@@ -1,61 +1,67 @@
 from agents.interpreter.query_understander_agent import QueryUnderstanderAgent
-from agents.datagatherer.yfinance_data_agent import YFinanceDataAgent
-from agents.datagatherer.dart_data_agent import DARTDataAgent
-from agents.datagatherer.kind_data_agent import KINDDataAgent
-from agents.decisionmaker.reasoner_agent import ReasonerAgent
+from agents.interpreter.ambiguity_resolver_agent import AmbiguityResolverAgent
+from agents.dataprovider.data_provider_agent import DataProviderAgent
+from agents.decisionmaker.analyzer_agent import AnalyzerAgent
+from agents.decisionmaker.validator_agent import ValidatorAgent
+from agents.decisionmaker.screener_agent import ScreeningAgent
 from agents.responder.summarizer_agent import SummarizerAgent
+from datapool.data_pool import DataPool
 
 class Orchestrator:
     def __init__(self):
         self.query_understander = QueryUnderstanderAgent()
-        self.yfinance_agent = YFinanceDataAgent()
-        self.dart_agent = DARTDataAgent()
-        self.kind_agent = KINDDataAgent()
-        self.reasoner = ReasonerAgent()
+        self.ambiguity_resolver = AmbiguityResolverAgent()
+        self.data_provider = DataProviderAgent()
+        self.analyzer = AnalyzerAgent()
+        self.validator = ValidatorAgent()
         self.summarizer = SummarizerAgent()
+        self.screener = ScreeningAgent()
 
-    def run(self, query: str) -> dict:
+    def run(self, raw_query: str) -> dict:
         try:
-            # 1. 질문 해석
-            structured = self.query_understander.process(query)
-            intent = structured.get("intent")
-            print("구조화된 해석 결과:", structured)
+            parsed_query = self.query_understander.handle(raw_query)
+            assert isinstance(parsed_query, dict), f"raw_query는 str이어야 합니다. 현재 타입: {type(raw_query)}"
 
-            # 2. 데이터 수집
-            if intent == "realtime_price_lookup" or intent == "technical_signal" or intent == "vague_request":
-                data = self.yfinance_agent.process(structured)
-            elif intent == "disclosure_query":
-                data = self.dart_agent.process(structured)
-            elif intent == "product_info":
-                data = self.kind_agent.process(structured)
-            else:
-                return {"error": "지원하지 않는 intent입니다.", "structured": structured}
+            parsed_query["query"]=raw_query
+            clarified_query = self.ambiguity_resolver.handle(parsed_query)
+        
+            if not isinstance(clarified_query, dict):
+                raise TypeError(f"clarified_query는 dict여야 합니다. 현재 타입: {type(clarified_query)} / 값: {clarified_query}")
 
-            print("수집된 데이터:", data)
 
-            # 3. 판단
-            structured_input = {
-                "intent": intent,
-                "target": structured.get("target"),
-                "condition": structured.get("condition"),
-                "data": data.get("data") if isinstance(data, dict) else data
-            }
+            if (
+                clarified_query.get("symbol", {}).get("raw") is None
+                and "condition" in clarified_query
+                and clarified_query["condition"].get("volume_change")
+            ):
+                judgment = self.screener.handle(clarified_query)
+          
+                response = self.summarizer.handle({
+                    "query": raw_query,
+                    "structured": clarified_query,
+                    "judgment": judgment,
+                    "data_pool": None
+                })
+                return response
 
-            result = self.reasoner.process(structured_input)
-            print("판단 결과:", result)
+            data_pool = DataPool()
+            self.data_provider.handle(clarified_query, data_pool)
 
-            # 4. 응답 생성
-            summary_input = {
-                "query": query,
-                "structured": structured,
-                "result": result
-            }
+            # 4. 판단 (정답 도출)
+            judgment = self.analyzer.handle(clarified_query, data_pool)
 
-            final = self.summarizer.process(summary_input)
-            return final
+            # 5. 응답 생성
+            response = self.summarizer.handle({
+                "query": raw_query,
+                "structured": clarified_query,
+                "judgment": judgment,
+                "data_pool": data_pool
+            })
+
+            return response
 
         except Exception as e:
             return {
-                "error": f"오케스트레이터 실행 중 오류 발생: {str(e)}",
-                "query": query
+                "error": f"[Orchestrator] 실행 중 오류 발생: {str(e)}",
+                "raw": {"error": str(e), "query": raw_query}
             }

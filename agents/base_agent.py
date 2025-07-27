@@ -1,16 +1,28 @@
 import time
+from abc import ABC, abstractmethod
 from utils.logger import logger
 
-class BaseAgent:
+class BaseAgent(ABC):
     def __init__(self, name: str):
         self.name = name
+        self.state = {}
 
-    def process(self, query: dict) -> dict:
+    @abstractmethod
+    def handle(self, query: dict, **kwargs) -> dict:
         """
-        각 Agent가 반드시 구현해야 하는 핵심 메서드.
-        예: structured dict → 결과 dict
+        에이전트가 반드시 구현해야 하는 메인 메서드.
+        query는 해석된 구조화 입력. kwargs에는 DataPool 등 컨텍스트가 담김.
         """
-        raise NotImplementedError(f"{self.name} 에이전트는 process()를 구현해야 합니다.")
+        raise NotImplementedError(f"[{self.name}] handle()을 구현해야 합니다.")
+
+    def update_state(self, key, value):
+        """
+        에이전트 내부 상태 기록 (예: confidence, fallback 요구 등).
+        """
+        self.state[key] = value
+
+    def get_state(self, key, default=None):
+        return self.state.get(key, default)
 
     def call_api(self, fn, *args, retries: int = 2, delay: float = 0.5):
         """
@@ -27,4 +39,5 @@ class BaseAgent:
                 logger.warning(f"[{self.name}] API 호출 실패 ({attempt + 1}/{retries}): {e}")
                 time.sleep(delay)
 
-        raise RuntimeError(f"[{self.name}] 최대 재시도 실패 - API 호출 불가")
+        logger.error(f"[{self.name}] 최대 재시도 실패 - API 호출 불가")
+        raise RuntimeError(f"[{self.name}] API 호출 실패")

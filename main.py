@@ -1,20 +1,24 @@
 from agents.orchestrator import Orchestrator
 
-def main():
-    print("금융 멀티에이전트 시스템 시작")
-
+def run_fin_agent(query: str):
+    
     orchestrator = Orchestrator()
 
-    while True:
-        query = input("\n사용자 질문: ").strip()
-        if query.lower() in ["exit", "quit"]:
-            print("시스템 종료")
-            break
+    result = orchestrator.run(query)
 
-        result = orchestrator.run(query)
-
-        print("\n응답 결과:")
+    print("\n최종 응답:")
+    if isinstance(result, dict):
+        print(result.get("response") or result)
+    else:
         print(result)
 
 if __name__ == "__main__":
-    main()
+    print("금융 멀티에이전트 시스템에 오신 것을 환영합니다!")
+    user_query = input("질문을 입력하세요: ").strip()
+
+    
+
+    if user_query:
+        run_fin_agent(user_query)
+    else:
+        print("질문이 입력되지 않았습니다.")

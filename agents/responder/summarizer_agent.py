@@ -1,57 +1,84 @@
 from agents.base_agent import BaseAgent
-from utils.hyperclova_api import generate_answer
+from api.hyperclova_api import generate_answer
 
 class SummarizerAgent(BaseAgent):
     def __init__(self):
         super().__init__("SummarizerAgent")
 
-    def process(self, summary_input: dict) -> dict:
-        """
-        summary_input 예시:
-        {
-            "query": "최근 많이 오른 주식 알려줘",
-            "structured": {
-                "intent": "vague_request",
-                "target": "삼성전자",
-                "condition": "상승률 기준 필요",
-                "date": "최근",
-                "is_ambiguous": true
-            },
-            "result": {
-                "rise_rate": 21.43,
-                "judgement": True
+    def handle(self, context: dict) -> dict:
+        user_query = context.get("query")
+        judgment = context.get("judgment", {})
+
+        if not isinstance(judgment, dict):
+            return {
+                "response": "판단 결과가 유효하지 않아 응답을 생성할 수 없습니다.",
+                "raw": context
+            }
+
+        judgment_type = judgment.get("judgment_type")
+
+        # Screening 판단 결과 요약이 있을 경우, 해당 요약을 그대로 사용
+        if judgment_type == "screening" and "judgment_summary" in judgment:
+            explanation = judgment["judgment_summary"]
+        else:
+            explanation = judgment.get("explanation") or self.format_judgment(judgment)
+
+        prompt = f"""다음은 사용자의 질문과 판단된 정답입니다.
+
+    질문: {user_query}
+
+    판단 결과: {explanation}
+
+    위 내용을 사용자에게 금융 전문가처럼 정중하고 간결하게 설명해주세요."""
+
+        answer = generate_answer(prompt)
+
+        return {
+            "response": answer,
+            "raw": {
+                "query": user_query,
+                "structured": context.get("structured"),
+                "judgment": judgment
             }
         }
+
+
+    def explain_with_doc(self, judgment, data_pool) -> dict:
         """
+        fallback 상황에서 RAG 문서 기반 보완 설명 생성
+        """
+        keyword = data_pool.get_metadata("keyword") or "관련 키워드"
+        doc = data_pool.get_doc_section(keyword) or "관련 문서를 찾을 수 없습니다."
 
-        prompt = self.build_prompt(summary_input)
+        prompt = f"""사용자의 질문에 대해 판단이 불완전하였으며,
+관련 문서에서 보조 정보를 찾았습니다.
 
-        answer = self.call_api(generate_answer, prompt)
+질문: {judgment.get('query', '[질문 없음]')}
 
-        return {"final_answer": answer}
+문서 발췌:
+{doc}
 
-    def build_prompt(self, summary_input: dict) -> str:
-        query = summary_input.get("query")
-        structured = summary_input.get("structured", {})
-        result = summary_input.get("result", {})
+이 문서를 기반으로, 사용자의 질문에 대한 정보를 요약 정리해 금융 전문가처럼 응답해주세요."""
 
-        # 간단한 예시 프롬프트
-        return f"""
-당신은 친절한 금융 AI 비서입니다.
+        answer = generate_answer(prompt)
 
-[사용자 질문]
-{query}
+        return {
+            "response": answer,
+            "raw": {
+                "judgment": judgment,
+                "doc": doc
+            }
+        }
 
-[의도 분석 결과]
-- 의도: {structured.get('intent')}
-- 대상: {structured.get('target')}
-- 조건: {structured.get('condition')}
-- 날짜: {structured.get('date')}
-- 모호성 있음?: {structured.get('is_ambiguous')}
-
-[판단 결과]
-{result}
-
-위의 정보를 바탕으로 사용자에게 자연스러운 문장으로 답변해주세요.
-숫자는 요약하되, 설명은 구체적으로 해주세요.
-"""
+    def format_judgment(self, judgment: dict) -> str:
+        """
+        judgment dict를 사람이 읽을 수 있는 형태로 정리 (fallback용 보조 함수)
+        """
+        if "price" in judgment:
+            return f"시가는 {judgment['price']}원입니다."
+        elif "rsi" in judgment:
+            return f"RSI는 {judgment['rsi']}입니다."
+        elif "change_ratio" in judgment:
+            return f"거래량 변화율은 {judgment['change_ratio']}%입니다."
+        else:
+            return "판단 결과 상세 정보가 부족합니다."
