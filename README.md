@@ -70,15 +70,15 @@ python test.py
 
 ### Dependencies
 ``` cpp
-yfinance
-
-requests
-
-python-dotenv
-
-pandas
-
-openai (optional, for LLM integration)
+pandas>=1.3.0
+yfinance>=0.2.30
+requests>=2.25.0
+python-dotenv>=0.20.0
+pyyaml>=6.0
+cerberus>=1.3.4
+python-dateutil>=2.8.2
+kafka-python>=2.0.2
+asyncio-mqtt>=0.16.1
 ```
 Check requirements.txt for the complete list.
 
