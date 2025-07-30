@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import yfinance as yf
 from api.yfinance_api import get_bulk_volume_parallel, get_bulk_rsi_parallel
+import time
 
 class ScreeningAgent:
     def __init__(self):
@@ -41,9 +42,17 @@ class ScreeningAgent:
 
             symbols = [row["종목코드"] + self.market_suffix for _, row in df_krx.iterrows()]
 
-            volume_prev_map = get_bulk_volume_parallel(symbols, prev_date.strftime("%Y-%m-%d"))
-            volume_curr_map = get_bulk_volume_parallel(symbols, date.strftime("%Y-%m-%d"))
-            rsi_map = get_bulk_rsi_parallel(symbols, date_str) if rsi_threshold else {}  # ← 추가
+            # API 리밋 방지를 위해 순차적으로 처리
+            print(f"거래량 데이터 수집 중... (전날: {prev_date.strftime('%Y-%m-%d')})")
+            volume_prev_map = get_bulk_volume_parallel(symbols, prev_date.strftime("%Y-%m-%d"), workers=5)
+            
+            print(f"거래량 데이터 수집 중... (당일: {date.strftime('%Y-%m-%d')})")
+            volume_curr_map = get_bulk_volume_parallel(symbols, date.strftime("%Y-%m-%d"), workers=5)
+            
+            rsi_map = {}
+            if rsi_threshold:
+                print(f"RSI 데이터 수집 중... (기준일: {date_str})")
+                rsi_map = get_bulk_rsi_parallel(symbols, date_str, workers=5)
 
             matched = []
 
@@ -79,7 +88,8 @@ class ScreeningAgent:
                     }
                 return None
 
-            with ThreadPoolExecutor(max_workers=20) as executor:
+            # API 리밋 방지를 위해 워커 수를 줄임
+            with ThreadPoolExecutor(max_workers=5) as executor:
                 futures = [executor.submit(volume_screening, row) for _, row in df_krx.iterrows()]
                 for future in as_completed(futures):
                     result = future.result()
@@ -100,14 +110,16 @@ class ScreeningAgent:
             }
 
         except Exception as e:
-            return {
-                "judgment": [],
-                "error": str(e),
-                "judgment_type": "screening"
-            }
+            return {"error": f"스크리닝 중 오류 발생: {str(e)}"}
 
     def _parse_volume_change(self, text: str) -> float:
-        if "%" in text:
-            num = int(''.join(filter(str.isdigit, text)))
-            return num / 100.0
-        return 0.3  # 기본값 (30%)
+        """거래량 변화율 텍스트를 파싱하여 float로 변환"""
+        if not text:
+            return 0.0
+        
+        # 숫자만 추출
+        import re
+        numbers = re.findall(r'\d+\.?\d*', text)
+        if numbers:
+            return float(numbers[0]) / 100  # 퍼센트를 소수로 변환
+        return 0.0
