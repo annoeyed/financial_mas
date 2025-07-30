@@ -154,7 +154,7 @@ def get_bulk_volume_parallel(symbols, target_date, workers=10):
             if nearest.empty:
                 return symbol, None
             
-            volume = int(nearest.iloc[0]["Volume"])
+            volume = int(nearest.iloc[0]["Volume"].item())
             
             # 결과를 캐시에 저장
             cache_manager.set("volume", symbol, target_date, volume)

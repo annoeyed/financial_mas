@@ -119,14 +119,17 @@ def test_cache_functionality():
     print(f"거래량: {volume2}, 소요시간: {time2:.3f}초")
     
     if volume1 == volume2:
-        print("✅ 캐시 기능 정상 작동")
-        print(f"속도 향상: {time1/time2:.1f}배")
+        print("캐시 기능 정상 작동")
+        if time2 > 0:
+            print(f"속도 향상: {time1/time2:.1f}배")
+        else:
+            print("속도 향상: 거의 즉시 (캐시 효과)")
     else:
-        print("❌ 캐시 기능 오류")
+        print("캐시 기능 오류")
 
 def main():
     """메인 테스트 함수"""
-    print("🚀 API 개선사항 테스트 시작\n")
+    print("API 개선사항 테스트 시작\n")
     
     try:
         # 1. 단일 API 호출 테스트
@@ -144,10 +147,10 @@ def main():
         if response.lower() == 'y':
             test_screener_agent()
         
-        print("\n✅ 모든 테스트 완료!")
+        print("\n모든 테스트 완료!")
         
     except Exception as e:
-        print(f"❌ 테스트 중 오류 발생: {e}")
+        print(f"테스트 중 오류 발생: {e}")
         import traceback
         traceback.print_exc()
 
