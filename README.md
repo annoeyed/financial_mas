@@ -70,15 +70,23 @@ python test.py
 
 ### Dependencies
 ``` cpp
-pandas>=1.3.0
-yfinance>=0.2.30
-requests>=2.25.0
-python-dotenv>=0.20.0
-pyyaml>=6.0
-cerberus>=1.3.4
-python-dateutil>=2.8.2
-kafka-python>=2.0.2
-asyncio-mqtt>=0.16.1
+Flask==2.3.3
+requests==2.31.0
+pandas==2.1.1
+numpy==1.24.3
+matplotlib==3.7.2
+seaborn==0.12.2
+scikit-learn==1.3.0
+python-dotenv==1.0.0
+Werkzeug==2.3.7
+yfinance==0.2.18
+PyYAML==6.0.1
+cerberus==1.3.5
+kafka-python==2.0.2
+asyncio-mqtt==0.16.1
+aiohttp==3.8.6
+websockets==11.0.3
+
 ```
 Check requirements.txt for the complete list.
 
