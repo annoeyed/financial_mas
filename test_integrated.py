@@ -144,14 +144,64 @@ def test_task4_ambiguous_interpretation():
     """Task 4: 모호한 의미 해석 테스트"""
     print_header("Task 4: 모호한 의미 해석 (Ambiguous Interpretation)")
     
-    print("\nTask 4는 아직 구현되지 않았습니다.")
-    print("구현 예정 기능:")
-    print("  - '최근 많이 오른 주식' → 정량화 로직 필요")
-    print("  - '고점 대비 많이 떨어진 주식' → 피크 대비 하락률 계산")
-    print("  - 되묻기 기능 → 사용자에게 구체적인 기준 요청")
-    print("  - 신뢰성 확보 방안 → 모호한 표현의 정량화")
+    from agents.decisionmaker.ambiguous_agent import AmbiguousAgent
     
-    print_result(False, "Task 4 미구현")
+    agent = AmbiguousAgent(test_mode=True)  # 테스트 모드로 빠른 실행
+    
+    # 테스트 1: 최근 많이 오른 주식
+    print("\n1. 최근 많이 오른 주식 테스트")
+    query = {
+        'type': 'recent_rise',
+        'days': 10,
+        'threshold': 5,
+        'limit': 5
+    }
+    
+    try:
+        result = agent.handle(query)
+        if result['success']:
+            print_result(True, f"최근 10일 5% 이상 상승: {result['total_found']}개 종목")
+            print(f"  {result.get('user_message', '')}")
+            for stock in result['stocks'][:3]:  # 상위 3개만 출력
+                print(f"  - {stock['symbol']}: {stock['performance']}% 상승")
+        else:
+            print_result(False, "최근 많이 오른 주식 검색 실패")
+    except Exception as e:
+        print_result(False, f"최근 많이 오른 주식 검색 오류: {e}")
+    
+    # 테스트 2: 고점 대비 많이 떨어진 주식
+    print("\n2. 고점 대비 많이 떨어진 주식 테스트")
+    query = {
+        'type': 'peak_drop',
+        'days': 252,
+        'threshold': -10,
+        'limit': 5
+    }
+    
+    try:
+        result = agent.handle(query)
+        if result['success']:
+            print_result(True, f"52주 고점 대비 10% 이상 하락: {result['total_found']}개 종목")
+            print(f"  {result.get('user_message', '')}")
+            for stock in result['stocks'][:3]:  # 상위 3개만 출력
+                print(f"  - {stock['symbol']}: {stock['drop_ratio']}% 하락")
+        else:
+            print_result(False, "고점 대비 많이 떨어진 주식 검색 실패")
+    except Exception as e:
+        print_result(False, f"고점 대비 많이 떨어진 주식 검색 오류: {e}")
+    
+    # 테스트 3: 되묻기 기능
+    print("\n3. 되묻기 기능 테스트")
+    query = {'type': 'invalid_type'}
+    
+    try:
+        result = agent.handle(query)
+        if result.get('clarification_needed'):
+            print_result(True, "되묻기 기능 정상 작동")
+        else:
+            print_result(False, "되묻기 기능 오류")
+    except Exception as e:
+        print_result(False, f"되묻기 기능 오류: {e}")
 
 def test_task5_specialized_features():
     """Task 5: 특화 기능 테스트"""
@@ -255,9 +305,9 @@ def main():
     print("  Task 1: 단순 조회 - 완료")
     print("  Task 2: 조건검색 - 완료")
     print("  Task 3: 시그널 감지 - 완료")
-    print("  Task 4: 모호한 의미 해석 - 미구현")
+    print("  Task 4: 모호한 의미 해석 - 완료")
     print("  Task 5: 특화 기능 - 부분 완료")
-    print("\n다음 단계: Task 4 구현")
+    print("\n다음 단계: Task 5 완성")
 
 if __name__ == "__main__":
     main() 
