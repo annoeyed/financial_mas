@@ -32,7 +32,11 @@ class Orchestrator:
             if (
                 clarified_query.get("symbol", {}).get("raw") is None
                 and "condition" in clarified_query
-                and clarified_query["condition"].get("volume_change")
+                and (
+                    clarified_query["condition"].get("volume_change") is not None
+                    or clarified_query["condition"].get("volume_direction") is not None
+                    or clarified_query["condition"].get("rsi") is not None
+                )
             ):
                 judgment = self.screener.handle(clarified_query)
           

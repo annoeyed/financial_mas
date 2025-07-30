@@ -15,21 +15,53 @@ class SummarizerAgent(BaseAgent):
                 "raw": context
             }
 
-        judgment_type = judgment.get("judgment_type")
+        # 1. screening의 경우 summary 바로 반환
+        if judgment.get("judgment_type") == "screening" and "judgment_summary" in judgment:
+            
+            limit = context.get("structured", {}).get("limit", 10)
+            top_names = [item["name"] for item in judgment.get("judgment", [])][:limit]
+            name_list_str = "\n".join([f"{i+1}. {name}" for i, name in enumerate(top_names)])
 
-        # Screening 판단 결과 요약이 있을 경우, 해당 요약을 그대로 사용
-        if judgment_type == "screening" and "judgment_summary" in judgment:
-            explanation = judgment["judgment_summary"]
-        else:
-            explanation = judgment.get("explanation") or self.format_judgment(judgment)
+            return {
+                "response": f"{judgment['judgment_summary']}\n\n종목 목록:\n{name_list_str}",
+                "raw": {
+                    "query": user_query,
+                    "structured": context.get("structured"),
+                    "judgment": judgment
+                }
+            }
 
+        # 2. 설명이 있는 경우 그대로 사용
+        if "explanation" in judgment:
+            return {
+                "response": judgment["explanation"],
+                "raw": {
+                    "query": user_query,
+                    "structured": context.get("structured"),
+                    "judgment": judgment
+                }
+            }
+
+        # 3. 간단한 포맷 대응 (가격, RSI 등)
+        formatted = self.format_judgment(judgment)
+        if formatted:
+            return {
+                "response": formatted,
+                "raw": {
+                    "query": user_query,
+                    "structured": context.get("structured"),
+                    "judgment": judgment
+                }
+            }
+
+        # 4. fallback: HyperCLOVA 호출
         prompt = f"""다음은 사용자의 질문과 판단된 정답입니다.
 
-    질문: {user_query}
+질문: {user_query}
 
-    판단 결과: {explanation}
+판단 결과: {judgment}
 
-    위 내용을 사용자에게 금융 전문가처럼 정중하고 간결하게 설명해주세요."""
+위 내용을 사용자에게 금융 전문가처럼 정중하고 간결하게 설명해주세요."""
 
         answer = generate_answer(prompt)
 
@@ -42,43 +74,14 @@ class SummarizerAgent(BaseAgent):
             }
         }
 
-
-    def explain_with_doc(self, judgment, data_pool) -> dict:
-        """
-        fallback 상황에서 RAG 문서 기반 보완 설명 생성
-        """
-        keyword = data_pool.get_metadata("keyword") or "관련 키워드"
-        doc = data_pool.get_doc_section(keyword) or "관련 문서를 찾을 수 없습니다."
-
-        prompt = f"""사용자의 질문에 대해 판단이 불완전하였으며,
-관련 문서에서 보조 정보를 찾았습니다.
-
-질문: {judgment.get('query', '[질문 없음]')}
-
-문서 발췌:
-{doc}
-
-이 문서를 기반으로, 사용자의 질문에 대한 정보를 요약 정리해 금융 전문가처럼 응답해주세요."""
-
-        answer = generate_answer(prompt)
-
-        return {
-            "response": answer,
-            "raw": {
-                "judgment": judgment,
-                "doc": doc
-            }
-        }
-
     def format_judgment(self, judgment: dict) -> str:
         """
-        judgment dict를 사람이 읽을 수 있는 형태로 정리 (fallback용 보조 함수)
+        judgment dict를 사람이 읽을 수 있는 형태로 정리
         """
         if "price" in judgment:
-            return f"시가는 {judgment['price']}원입니다."
+            return f"해당 종목의 현재 가격은 {judgment['price']}원입니다."
         elif "rsi" in judgment:
-            return f"RSI는 {judgment['rsi']}입니다."
+            return f"해당 종목의 RSI는 {judgment['rsi']}입니다."
         elif "change_ratio" in judgment:
             return f"거래량 변화율은 {judgment['change_ratio']}%입니다."
-        else:
-            return "판단 결과 상세 정보가 부족합니다."
+        return ""
