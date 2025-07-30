@@ -1,0 +1,10 @@
+{
+  "timestamp": "2025-07-30T20:42:42.282566",
+  "data": {
+    "symbol": "105560.KS",
+    "current_price": 111300.0,
+    "peak_price": 126600.0,
+    "drop_ratio": -12.09,
+    "days": 252
+  }
+}
