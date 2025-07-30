@@ -1,92 +1,94 @@
 # Financial Multi-Agent System (MAS)
 
-This repository contains a modular **multi-agent system** designed for financial market analysis and decision-making.  
-Each agent is responsible for a distinct stage in the investment workflow — from data collection to signal generation — with communication managed through an orchestrator and shared event bus.
+A **modular multi-agent system** designed for **financial market analysis** and **decision-making** using Python.
+
+This repository contains a system where **each agent is responsible for a distinct stage in the investment workflow** — from **data collection** to **signal generation** — with communication managed through an **orchestrator** and a **shared event bus**. The architecture promotes modularity, scalability, and explainability, making it ideal for experimental finance automation.
 
 ---
 
-## Architecture Overview
+
+## Project Structure
 ```
 financial_mas/
-├── agents/ # Individual agents (market data, technical, screening, etc.)
-│ ├── base_agent.py
-│ ├── intent_agent.py
-│ ├── market_data_agent.py
-│ ├── orchestrator.py
-│ ├── screening_agent.py
-│ ├── signal_agent.py
-│ └── technical_agent.py
-├── config/ # Agent config, system settings, API keys
-│ ├── agents.yaml
-│ ├── api_keys.yaml
-│ └── system_settings.yaml
-├── core/ # Orchestrator, task scheduler, memory, communication
-│ ├── communication.py
-│ ├── memory_manager.py
-│ ├── orchestrator.py
-│ └── task_scheduler.py
-├── messaging/ # Pub/Sub communication layer
-│ ├── event_bus.py
-│ └── pubsub_config.py
-├── tools/ # External tools and APIs (e.g., HyperCLOVA)
-│ ├── analysis_tools.py
-│ ├── hyperclova_api.py
-│ └── market_data_tools.py
-├── utils/ # Logging, error handling, validation
-│ ├── data_validator.py
-│ ├── error_handler.py
-│ └── logger.py
-├── main.py # System entry point
+│
+├── core/ # Core agents and orchestrator logic
+├── datapool/ # Data retrieval (e.g., YFinance, KIND)
+├── messaging/ # Message passing and agent communication
+├── utils/ # Utility functions
+│
+├── main.py # Entry point for orchestrated agent execution
+├── test.py # Basic test for orchestrator and agents
+├── .env # Environment variables (e.g., API keys)
+└── README.md # You're here
 ```
 
 ---
 
-##  Key Agents
+##  Key Features
 
-| Agent Name           | Role                                                                 |
-|----------------------|----------------------------------------------------------------------|
-| `MarketDataAgent`    | Fetches real-time or historical market data                          |
-| `TechnicalAgent`     | Performs technical indicator analysis (e.g., RSI, MACD)              |
-| `ScreeningAgent`     | Filters assets based on configurable screening criteria              |
-| `SignalAgent`        | Generates buy/sell/hold signals based on aggregated inputs           |
-| `IntentAgent`        | Interprets user intent and routes tasks accordingly                  |
-| `Orchestrator`       | Coordinates task execution, message flow, and memory updates         |
-
----
-
-## ⚙ Configuration
-
-All configs are located in the `config/` directory:
-
-- `agents.yaml`: defines agent roles, names, and descriptions  
-- `system_settings.yaml`: system-level parameters (e.g., threading, scheduling)  
-- `api_keys.yaml`: API credentials for external tools and services
+-  **Multi-Agent Architecture**: Role-specific agents handle stages like screening, scoring, and signal issuing
+-  **Asynchronous Messaging**: Agents communicate via an event-driven shared message bus
+-  **Integrated Data Sources**: Supports [YFinance](https://pypi.org/project/yfinance/), KIND, DART, and other APIs
+-  **Signal Generation**: Agents produce simple buy/sell signals based on rules or ML logic
+-  **Built-in Test Harness**: `test.py` verifies end-to-end agent functionality
 
 ---
 
 ##  Getting Started
 
+### 1. Clone the Repository
+
 ```bash
-# (Optional) Create virtual environment
-python -m venv venv
-source venv/bin/activate  # or venv\Scripts\activate on Windows
+git clone -b dh https://github.com/annoeyed/financial_mas.git
+cd financial_mas
+```
 
-# Install dependencies
-pip install -r requirements.txt  # (if you have one)
+### 2. Install Dependencies
 
-# Run the system
+```bash
+pip install -r requirements.txt
+```
+
+### 3. Configure API Keys
+
+Create a .env file in the root directory and add your API keys:
+
+``` ini
+DART_API_KEY=your_key_here
+OPENAI_API_KEY=your_openai_key_here
+```
+
+### 4. Run the System
+``` bash
 python main.py
+```
+
+### Run Test
+``` bash
+python test.py
+```
+
+### Dependencies
+``` cpp
+yfinance
+
+requests
+
+python-dotenv
+
+pandas
+
+openai (optional, for LLM integration)
+```
+Check requirements.txt for the complete list.
 
 ---
-
-##  License
-
-This project is licensed under the MIT License.
+## License
+This project is for educational and research purposes only.
 
 ---
-
-## 🙋‍♀ Contact
-
-Maintainer: [@annoeyed](https://github.com/annoeyed)  
-For questions or collaboration inquiries, feel free to open an issue or pull request.
-
+## Authors
+- **Nayeon Kim** [@annoeyed](https://github.com/annoeyed)  
+- **Donghee Kim** [@donghee290](https://github.com/donghee290)  
+- **Jimin Hwang** [@specture258](https://github.com/specture258)  
+---
