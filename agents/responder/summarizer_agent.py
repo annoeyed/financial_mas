@@ -8,53 +8,67 @@ class SummarizerAgent(BaseAgent):
     def handle(self, context: dict) -> dict:
         user_query = context.get("query")
         judgment = context.get("judgment", {})
+        structured = context.get("structured", {})
 
-        if not isinstance(judgment, dict):
+        # 1. 판단 결과가 없거나 비정상적인 경우 (validator 기능 대체)
+        if not isinstance(judgment, dict) or not judgment:
             return {
-                "response": "판단 결과가 유효하지 않아 응답을 생성할 수 없습니다.",
-                "raw": context
+                "response": "죄송합니다. 질문의 결과를 분석하는 데 필요한 정보가 충분하지 않습니다. 다시 한 번 명확히 질문해주시겠어요?",
+                "raw": {
+                    "query": user_query,
+                    "structured": structured,
+                    "judgment": judgment
+                },
+                "clarification_needed": True,
+                "clarification": {
+                    "message": "궁금하신 점을 조금 더 구체적으로 말씀해 주세요.",
+                    "suggestions": [
+                        "삼성전자 주가 알려줘",
+                        "오늘 거래량이 급등한 종목은?",
+                        "RSI가 70 이상인 종목 보여줘"
+                    ]
+                }
             }
 
-        # 1. screening의 경우 summary 바로 반환
+        # 2. screening 타입은 judgment_summary와 name 목록 반환
         if judgment.get("judgment_type") == "screening" and "judgment_summary" in judgment:
-            
-            limit = context.get("structured", {}).get("limit", 10)
-            top_names = [item["name"] for item in judgment.get("judgment", [])][:limit]
+            limit = structured.get("limit", 10)
+            top_names = [item.get("name", "알 수 없음") for item in judgment.get("judgment", [])][:limit]
             name_list_str = "\n".join([f"{i+1}. {name}" for i, name in enumerate(top_names)])
 
             return {
                 "response": f"{judgment['judgment_summary']}\n\n종목 목록:\n{name_list_str}",
                 "raw": {
                     "query": user_query,
-                    "structured": context.get("structured"),
+                    "structured": structured,
                     "judgment": judgment
                 }
             }
 
-        # 2. 설명이 있는 경우 그대로 사용
+        # 3. explanation이 있는 경우 직접 사용
         if "explanation" in judgment:
             return {
                 "response": judgment["explanation"],
                 "raw": {
                     "query": user_query,
-                    "structured": context.get("structured"),
+                    "structured": structured,
                     "judgment": judgment
                 }
             }
 
-        # 3. 간단한 포맷 대응 (가격, RSI 등)
+        # 4. 간단한 포맷에 대응
         formatted = self.format_judgment(judgment)
         if formatted:
             return {
                 "response": formatted,
                 "raw": {
                     "query": user_query,
-                    "structured": context.get("structured"),
+                    "structured": structured,
                     "judgment": judgment
                 }
             }
 
-        # 4. fallback: HyperCLOVA 호출
+        # 5. fallback: HyperCLOVA-X 호출
         prompt = f"""다음은 사용자의 질문과 판단된 정답입니다.
 
 질문: {user_query}
@@ -69,7 +83,7 @@ class SummarizerAgent(BaseAgent):
             "response": answer,
             "raw": {
                 "query": user_query,
-                "structured": context.get("structured"),
+                "structured": structured,
                 "judgment": judgment
             }
         }
