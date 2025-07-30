@@ -1,0 +1,9 @@
+{
+  "timestamp": "2025-07-30T20:20:35.086987",
+  "data": {
+    "current_price": 31450.0,
+    "moving_average": 25827.0,
+    "breakout_ratio": 21.77,
+    "is_breakout": true
+  }
+}
