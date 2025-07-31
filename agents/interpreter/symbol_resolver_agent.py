@@ -23,7 +23,6 @@ class SymbolResolverAgent(BaseAgent):
                 yfsuffix = ".KQ" if market == "KOSDAQ" else ".KS"
 
                 self.symbol_map[name] = {
-                    "koreainvestment_code": code,
                     "yfinance_code": code + yfsuffix
                 }
 
@@ -50,6 +49,17 @@ class SymbolResolverAgent(BaseAgent):
     async def handle(self, context: dict) -> dict:
         text = context.get("query", "")
         candidates = re.findall(r"[가-힣A-Za-z0-9]{2,20}(?:우|우B|우선주)?", text)
+
+        filtered = [word for word in candidates if not word.isdigit()]
+        for word in filtered:
+            word = word.strip()
+            mapped = self.resolve(word)
+            if mapped:
+                context["symbol"] = {
+                    "raw": word,
+                    **mapped
+                }
+                return context
 
         for word in candidates:
             word = word.strip()

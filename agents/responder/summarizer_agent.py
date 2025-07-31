@@ -13,7 +13,7 @@ class SummarizerAgent(BaseAgent):
         # 1. 판단 결과가 없거나 비정상적인 경우 (validator 기능 대체)
         if not isinstance(judgment, dict) or not judgment:
             return {
-                "response": "죄송합니다. 질문의 결과를 분석하는 데 필요한 정보가 충분하지 않습니다. 다시 한 번 명확히 질문해주시겠어요?",
+                "response": "죄송합니다. 질문의 결과를 분석하는 데 필요한 정보가 충분하지 않습니다.",
                 "raw": {
                     "query": user_query,
                     "structured": structured,

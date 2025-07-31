@@ -44,36 +44,30 @@ def safe_yf_download(symbol: str, start: str, end: str, max_retries: int = 3):
     return pd.DataFrame()
 
 def get_price_data(symbol: str, date_str: str) -> float:
+    print(f"[DEBUG] get_price_data() called with {symbol} / {date_str}")
+    
+    target_date = datetime.strptime(date_str, "%Y-%m-%d")
+    next_day = (target_date + timedelta(days=1)).strftime("%Y-%m-%d")
+
     try:
-        # 캐시에서 먼저 확인
-        cached_data = cache_manager.get("price", symbol, date_str)
-        if cached_data is not None:
-            return cached_data
-        
-        date = datetime.strptime(date_str, "%Y-%m-%d").date()
-    
-        date = get_nearest_trading_day(date)
-    
-        start = (date - timedelta(days=1)).strftime("%Y-%m-%d")
-        end = (date + timedelta(days=1)).strftime("%Y-%m-%d")
-
-        df = safe_yf_download(symbol, start, end)
-
-        if df.empty:
-            return None
-
-        row = df[df.index.date == date]
-        if row.empty:
-            return None
-
-        result = float(row["Open"].values[0])
-        
-        # 결과를 캐시에 저장
-        cache_manager.set("price", symbol, date_str, result)
-        
-        return result
+        df = yf.download(symbol, start=date_str, end=next_day, auto_adjust=False, progress=False)
+        if not df.empty:
+            return float(df["Close"].iloc[0])
     except Exception as e:
-        return None
+        print(f"[ERROR] get_price_data: {e}")
+
+    # 휴장일 보정
+    for i in range(1, 6):
+        try_date = (target_date - timedelta(days=i)).strftime("%Y-%m-%d")
+        next_try = (target_date - timedelta(days=i-1)).strftime("%Y-%m-%d")
+        try:
+            df = yf.download(symbol, start=try_date, end=next_try, auto_adjust=False, progress=False)
+            if not df.empty:
+                return float(df["Close"].iloc[0])
+        except:
+            continue
+
+    return None
 
 def get_moving_average_data(symbol: str, date_str: str, period: int = 50) -> dict:
     """
@@ -95,6 +89,7 @@ def get_moving_average_data(symbol: str, date_str: str, period: int = 50) -> dic
         time.sleep(random.uniform(0.2, 0.4))
         
         df = yf.download(symbol, start=start_date, end=end_date, auto_adjust=False, progress=False, threads=False)
+        print(f"[DEBUG] Raw data from yfinance: \n{df}")
         
         if df.empty or len(df) < period:
             print(f"데이터 부족: {len(df)}행 (필요: {period}행)")
@@ -161,6 +156,7 @@ def get_volume_data(symbol: str, date: str) -> int:
         df = ticker.history(start=date, end=end_date)
 
         if df.empty:
+            print("[DEBUG] DataFrame is empty")
             return None
 
         nearest_row = get_nearest_trading_day_data(df, date)
@@ -173,7 +169,8 @@ def get_volume_data(symbol: str, date: str) -> int:
         cache_manager.set("volume", symbol, date, result)
         
         return result
-    except Exception:
+    except Exception as e:
+        print(f"[ERROR] get_price_data() Exception: {e}", flush=True)
         return None 
 
 def get_volume_change(symbol: str, prev_date: str, date: str) -> dict:
