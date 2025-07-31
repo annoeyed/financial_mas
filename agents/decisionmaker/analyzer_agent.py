@@ -26,25 +26,15 @@ class AnalyzerAgent(BaseAgent):
         # 기본적인 주가 조회 응답
         if intent.get("task") == "simple_inquiry":
             try:
-                # yfinance 코드 가져오기
                 yf_code = symbol.get("yfinance_code") if isinstance(symbol, dict) else f"{symbol}.KS"
-                
-                # 주가 데이터 조회
-                ticker = yf.Ticker(yf_code)
-                hist = ticker.history(period="1d")
-                
-                if not hist.empty:
-                    current_price = hist['Close'].iloc[-1]
-                    return {
-                        "judgment": {
-                            "symbol": symbol_name,
-                            "price": round(current_price, 2),
-                            "status": "success"
-                        },
-                        "confidence": 0.9,
-                        "explanation": f"{symbol_name}의 현재 주가는 {round(current_price, 2):,}원입니다."
-                    }
+                if date:
+                    price = get_price_data(yf_code, date)
                 else:
+                    ticker = yf.Ticker(yf_code)
+                    hist = ticker.history(period="1d")
+                    price = hist["Close"].iloc[-1] if not hist.empty else None
+
+                if price is None:
                     return {
                         "judgment": {
                             "symbol": symbol_name,
@@ -54,6 +44,17 @@ class AnalyzerAgent(BaseAgent):
                         "confidence": 0.0,
                         "explanation": f"{symbol_name}의 주가 데이터를 가져올 수 없습니다."
                     }
+
+                return {
+                    "judgment": {
+                        "symbol": symbol_name,
+                        "price": round(price, 2),
+                        "status": "success"
+                    },
+                    "confidence": 0.9,
+                    "explanation": f"{symbol_name}의 {date or '현재'} 종가는 {round(price, 2):,}원입니다."
+                }
+
             except Exception as e:
                 return {
                     "judgment": {

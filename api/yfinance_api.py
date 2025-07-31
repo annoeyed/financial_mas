@@ -100,11 +100,9 @@ def get_moving_average_data(symbol: str, date_str: str, period: int = 50) -> dic
             print(f"데이터 부족: {len(df)}행 (필요: {period}행)")
             return None
         
-        # 멀티컬럼 DataFrame 처리
-        if isinstance(df.columns, pd.MultiIndex):
-            close_col = df['Close']
-        else:
-            close_col = df['Close']
+        close_col = df['Close']
+        if isinstance(close_col, pd.DataFrame):
+            close_col = close_col.iloc[:, 0]
         
         # 이동평균 계산
         df['MA'] = close_col.rolling(window=period).mean()
