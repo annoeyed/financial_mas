@@ -44,30 +44,28 @@ def safe_yf_download(symbol: str, start: str, end: str, max_retries: int = 3):
     return pd.DataFrame()
 
 def get_price_data(symbol: str, date_str: str) -> float:
-    print(f"[DEBUG] get_price_data() called with {symbol} / {date_str}")
     
-    target_date = datetime.strptime(date_str, "%Y-%m-%d")
-    next_day = (target_date + timedelta(days=1)).strftime("%Y-%m-%d")
+    target_date = datetime.strptime(date_str, "%Y-%m-%d").date()
+    start_date = (target_date - timedelta(days=5)).strftime("%Y-%m-%d")
+    end_date = (target_date + timedelta(days=5)).strftime("%Y-%m-%d")
 
     try:
-        df = yf.download(symbol, start=date_str, end=next_day, auto_adjust=False, progress=False)
-        if not df.empty:
-            return float(df["Close"].iloc[0])
+        df = yf.download(symbol, start=start_date, end=end_date, auto_adjust=False, progress=False, threads=False)
+        if df.empty:
+            return None
+
+        df = df.reset_index()
+        df["Date"] = pd.to_datetime(df["Date"]).dt.date
+
+        future_dates = df[df["Date"] >= target_date]
+        if future_dates.empty:
+            return None
+
+        row = future_dates.iloc[0]
+        return float(row["Close"])
+
     except Exception as e:
-        print(f"[ERROR] get_price_data: {e}")
-
-    # 휴장일 보정
-    for i in range(1, 6):
-        try_date = (target_date - timedelta(days=i)).strftime("%Y-%m-%d")
-        next_try = (target_date - timedelta(days=i-1)).strftime("%Y-%m-%d")
-        try:
-            df = yf.download(symbol, start=try_date, end=next_try, auto_adjust=False, progress=False)
-            if not df.empty:
-                return float(df["Close"].iloc[0])
-        except:
-            continue
-
-    return None
+        return None
 
 def get_moving_average_data(symbol: str, date_str: str, period: int = 50) -> dict:
     """
@@ -89,7 +87,6 @@ def get_moving_average_data(symbol: str, date_str: str, period: int = 50) -> dic
         time.sleep(random.uniform(0.2, 0.4))
         
         df = yf.download(symbol, start=start_date, end=end_date, auto_adjust=False, progress=False, threads=False)
-        print(f"[DEBUG] Raw data from yfinance: \n{df}")
         
         if df.empty or len(df) < period:
             print(f"데이터 부족: {len(df)}행 (필요: {period}행)")
@@ -112,7 +109,6 @@ def get_moving_average_data(symbol: str, date_str: str, period: int = 50) -> dic
                 break
         
         if nearest_data is None or pd.isna(nearest_data['MA'].iloc[0]):
-            print(f"이동평균 계산 실패: 날짜 {date_str}")
             return None
         
         current_price = float(nearest_data['Close'].iloc[0])
@@ -156,7 +152,6 @@ def get_volume_data(symbol: str, date: str) -> int:
         df = ticker.history(start=date, end=end_date)
 
         if df.empty:
-            print("[DEBUG] DataFrame is empty")
             return None
 
         nearest_row = get_nearest_trading_day_data(df, date)

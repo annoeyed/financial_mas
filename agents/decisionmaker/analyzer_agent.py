@@ -26,7 +26,6 @@ class AnalyzerAgent(BaseAgent):
         # 1. 단순 주가 조회
         if intent.get("task") == "simple_inquiry":
             try:
-                print(f"[DEBUG] AnalyzerAgent에서 get_price_data() 호출 준비: {yf_code} / {date}")
                 price = get_price_data(yf_code, date)
 
                 if price is None:
