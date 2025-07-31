@@ -35,6 +35,11 @@ class SymbolResolverAgent(BaseAgent):
         result = self.symbol_map.get(name)
         if result:
             return result
+        if not result:
+            return {
+                "raw": name,
+                "error": "종목코드 매핑 실패"
+            }
 
         candidates = difflib.get_close_matches(name, self.symbol_map.keys(), n=1, cutoff=0.7)
         if candidates:

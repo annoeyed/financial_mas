@@ -1,6 +1,7 @@
 from agents.base_agent import BaseAgent
 from datetime import datetime, timedelta
 import yfinance as yf
+from api.yfinance_api import get_price_data, get_volume_data, get_rsi_data
 
 class AnalyzerAgent(BaseAgent):
     def __init__(self):
@@ -69,7 +70,8 @@ class AnalyzerAgent(BaseAgent):
 
         # 1. RSI 판단
         if "rsi" in condition:
-            rsi = data.get_rsi(symbol, date)
+            result = {}
+            rsi = get_rsi_data(symbol.get("yfinance_code"), date)
             if rsi is None:
                 return {
                     "judgment": None,
@@ -86,9 +88,10 @@ class AnalyzerAgent(BaseAgent):
 
         # 2. 거래량 변화율 판단
         elif "volume_change" in condition:
-            today_volume = data.get_volume(symbol, date)
+            result = {}
+            today_volume = get_volume_data(symbol.get("yfinance_code"), date)
             yesterday = self.get_previous_date(date)
-            y_volume = data.get_volume(symbol, yesterday)
+            y_volume = get_volume_data(symbol.get("yfinance_code"), yesterday)
 
             if today_volume is None or y_volume is None or y_volume == 0:
                 return {
@@ -109,7 +112,7 @@ class AnalyzerAgent(BaseAgent):
 
         # 3. 단순 시가 조회
         else:
-            price = data.get_price(symbol, date)
+            price = get_price_data(symbol.get("yfinance_code"), date)
             if price is None:
                 return {
                     "judgment": None,
