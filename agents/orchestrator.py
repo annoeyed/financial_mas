@@ -13,7 +13,6 @@ from utils.logger import logger
 
 class Orchestrator:
     def __init__(self, config_path="config/agents.yaml"):
-        _ = yaml.safe_load(open(config_path, "r")) if config_path else {}
 
         self.agents = {
             "query_understander": QueryUnderstanderAgent(),
