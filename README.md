@@ -92,6 +92,11 @@ Interpreter → DecisionMaker → Responder 흐름 관리
 
 ---
 
+##  Architecture Diagram
+<img width="3840" height="3710" alt="Image" src="https://github.com/user-attachments/assets/86708e67-7537-4a1e-96a6-1d2995fa0847" />
+
+---
+
 ##  Getting Started
 
 ### 1. Clone the Repository
