@@ -116,12 +116,13 @@ def get_moving_average_data(symbol: str, date_str: str, period: int = 50) -> dic
                 nearest_data = row
                 break
         
-        if nearest_data is None or pd.isna(nearest_data['MA'].item()):
+        if nearest_data is None or pd.isna(nearest_data['MA'].iloc[0]):
             print(f"이동평균 계산 실패: 날짜 {date_str}")
             return None
         
-        current_price = float(nearest_data['Close'].item())
-        moving_average = float(nearest_data['MA'].item())
+        current_price = float(nearest_data['Close'].iloc[0])
+        moving_average = float(nearest_data['MA'].iloc[0])
+
         
         # 돌파율 계산
         breakout_ratio = ((current_price - moving_average) / moving_average) * 100
