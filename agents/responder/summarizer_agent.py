@@ -5,7 +5,7 @@ class SummarizerAgent(BaseAgent):
     def __init__(self):
         super().__init__("SummarizerAgent")
 
-    def handle(self, context: dict) -> dict:
+    async def handle(self, context: dict) -> dict:
         user_query = context.get("query")
         judgment = context.get("judgment", {})
         structured = context.get("structured", {})
@@ -93,7 +93,11 @@ class SummarizerAgent(BaseAgent):
         judgment dict를 사람이 읽을 수 있는 형태로 정리
         """
         if "price" in judgment:
-            return f"해당 종목의 현재 가격은 {judgment['price']}원입니다."
+            price = judgment['price']
+            if isinstance(price, (int, float)):
+                return f"해당 종목의 현재 가격은 {price:,}원입니다."
+            else:
+                return f"해당 종목의 현재 가격은 {price}입니다."
         elif "rsi" in judgment:
             return f"해당 종목의 RSI는 {judgment['rsi']}입니다."
         elif "change_ratio" in judgment:

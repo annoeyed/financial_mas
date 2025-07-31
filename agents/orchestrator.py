@@ -53,6 +53,16 @@ class Orchestrator:
                     output = await agent.process(context)
                     if output:
                         context["results"][agent_name] = output
+                        
+                        # 특정 에이전트의 결과를 context에 직접 저장
+                        if agent_name == "analyzer" and output.get("judgment"):
+                            context["judgment"] = output.get("judgment")
+                        elif agent_name == "screener" and output.get("judgment"):
+                            context["judgment"] = output.get("judgment")
+                        elif agent_name == "signal" and output.get("judgment"):
+                            context["judgment"] = output.get("judgment")
+                        elif agent_name == "advanced" and output.get("judgment"):
+                            context["judgment"] = output.get("judgment")
 
                     if agent_name == "ambiguous" and output.get("clarification_needed"):
                         context["clarification_needed"] = True
@@ -72,8 +82,15 @@ class Orchestrator:
                     "response": context["response"]
                 }
 
+            # summarizer의 응답 구조에 맞게 수정
+            summarizer_result = context["results"].get("summarizer", {})
+            if isinstance(summarizer_result, dict):
+                response = summarizer_result.get("response", "응답 없음")
+            else:
+                response = str(summarizer_result) if summarizer_result else "응답 없음"
+                
             return {
-                "response": context["results"].get("summarizer"),
+                "response": response,
                 "intent": context["intent"],
                 "intermediate": context["results"]
             }

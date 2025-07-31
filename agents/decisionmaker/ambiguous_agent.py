@@ -14,14 +14,34 @@ class AmbiguousAgent(BaseAgent):
         self.test_mode = test_mode
 
     async def handle(self, context: dict) -> dict:
-        query = context.get("intent", {}) or {}
-        query_type = query.get("type", "")
-
-        if query_type == "recent_rise":
-            return await self._handle_recent_rise(query)
-        elif query_type == "peak_drop":
-            return await self._handle_peak_drop(query)
-        else:
+        # query_understander의 결과를 확인
+        intent = context.get("intent", {})
+        query = context.get("query", "")
+        
+        # 기본적인 주가 조회나 종목 정보 요청은 모호하지 않음
+        if intent.get("task") == "simple_inquiry" and intent.get("symbol"):
+            return {
+                "clarification_needed": False,
+                "message": "질문이 명확합니다."
+            }
+        
+        # 스크리닝 요청도 모호하지 않음
+        if intent.get("task") == "screening":
+            return {
+                "clarification_needed": False,
+                "message": "스크리닝 요청이 명확합니다."
+            }
+        
+        # 특별한 패턴이 있는 경우만 모호함으로 판단
+        ambiguous_patterns = [
+            "어떤", "무엇", "어떻게", "어디", "언제", "누가",
+            "추천", "좋은", "나쁜", "최고", "최악",
+            "어떤 종류", "무슨 종목", "어떤 주식"
+        ]
+        
+        is_ambiguous = any(pattern in query for pattern in ambiguous_patterns)
+        
+        if is_ambiguous:
             return {
                 "clarification_needed": True,
                 "response": "어떤 종류의 주식을 찾으시나요?",
@@ -32,6 +52,11 @@ class AmbiguousAgent(BaseAgent):
                         {"label": "고점 대비 많이 떨어진 주식", "value": "peak_drop"}
                     ]
                 }
+            }
+        else:
+            return {
+                "clarification_needed": False,
+                "message": "질문이 명확합니다."
             }
 
     async def _handle_recent_rise(self, query: dict) -> dict:

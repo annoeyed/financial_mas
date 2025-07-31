@@ -1,5 +1,6 @@
 from agents.base_agent import BaseAgent
 from datetime import datetime, timedelta
+import yfinance as yf
 
 class AnalyzerAgent(BaseAgent):
     def __init__(self):
@@ -11,16 +12,58 @@ class AnalyzerAgent(BaseAgent):
         date = intent.get("date")
         condition = intent.get("condition") or {}
 
-        data = context.get("data")
-        result = {}
-        explanation = ""
-
-        if not symbol or not date or not data:
+        # 데이터가 없어도 기본적인 응답 제공
+        if not symbol:
             return {
                 "judgment": None,
                 "confidence": 0.0,
-                "reason": "심볼, 날짜, 데이터가 충분하지 않습니다."
+                "reason": "종목 정보가 없습니다."
             }
+
+        symbol_name = symbol.get("raw") if isinstance(symbol, dict) else str(symbol)
+        
+        # 기본적인 주가 조회 응답
+        if intent.get("task") == "simple_inquiry":
+            try:
+                # yfinance 코드 가져오기
+                yf_code = symbol.get("yfinance_code") if isinstance(symbol, dict) else f"{symbol}.KS"
+                
+                # 주가 데이터 조회
+                ticker = yf.Ticker(yf_code)
+                hist = ticker.history(period="1d")
+                
+                if not hist.empty:
+                    current_price = hist['Close'].iloc[-1]
+                    return {
+                        "judgment": {
+                            "symbol": symbol_name,
+                            "price": round(current_price, 2),
+                            "status": "success"
+                        },
+                        "confidence": 0.9,
+                        "explanation": f"{symbol_name}의 현재 주가는 {round(current_price, 2):,}원입니다."
+                    }
+                else:
+                    return {
+                        "judgment": {
+                            "symbol": symbol_name,
+                            "price": "데이터 없음",
+                            "status": "error"
+                        },
+                        "confidence": 0.0,
+                        "explanation": f"{symbol_name}의 주가 데이터를 가져올 수 없습니다."
+                    }
+            except Exception as e:
+                return {
+                    "judgment": {
+                        "symbol": symbol_name,
+                        "price": "오류 발생",
+                        "status": "error",
+                        "error": str(e)
+                    },
+                    "confidence": 0.0,
+                    "explanation": f"{symbol_name} 주가 조회 중 오류가 발생했습니다: {str(e)}"
+                }
 
         symbol_name = symbol.get("raw") if isinstance(symbol, dict) else str(symbol)
 
